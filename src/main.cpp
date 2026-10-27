@@ -122,23 +122,29 @@ int main() {
         player.update();
         // camera
 
-        // TODO: Remove this line and replace it with code that determines if the player's (center)
-        // is between the two green lines (open space), in the soft exclusion zones (between the
-        // green and red lines), or in the hard exclusion zones (beyond either of the red lines).
-        //
-        // If the player is in the open zone, the camera does not need to move.
-        //
-        // If the player is in the soft exclusion zones, the camera should softly translate over
-        // multiple frames (via an exponential moving average) until the player's center is aligned
-        // with the violated soft boundary. Use SOFT_CAMERA_ALPHA for the alpha value.
-        //
-        // If the player is in the hard exclusion zones, the camera should hard-adjust so that
-        // the player's center is always kept at most *at* the red lines. This means that the
-        // player center must NEVER pass the red lines.
-        //
-        // Use SOFT_LIMIT_PERCENT and HARD_LIMIT_PERCENT to parameterize the green and red
-        // line positions.
-        camera.setCameraCenter({player.position.x, WINDOW_HEIGHT * 0.5f});
+        sf::Vector2f playerCenter{player.position.x, player.position.y - PLAYER_WIDTH / 2.f};
+        float playerWindowX = camera.worldToWindow(playerCenter).x;
+        float softLeft = WINDOW_WIDTH * SOFT_LIMIT_PERCENT;
+        float softRight = WINDOW_WIDTH * (1.f - SOFT_LIMIT_PERCENT);
+        float hardLeft = WINDOW_WIDTH * HARD_LIMIT_PERCENT;
+        float hardRight = WINDOW_WIDTH * (1.f - HARD_LIMIT_PERCENT);
+        float alpha = 0.f;
+        float targetWindowX = playerWindowX;
+        if (playerWindowX < softLeft) {
+            alpha = SOFT_CAMERA_ALPHA;
+            targetWindowX = softLeft;
+        } else if (playerWindowX > softRight) {
+            alpha = SOFT_CAMERA_ALPHA;
+            targetWindowX = softRight;
+        }
+        if (playerWindowX < hardLeft) {
+            alpha = 1.f;
+            targetWindowX = hardLeft;
+        } else if (playerWindowX > hardRight) {
+            alpha = 1.f;
+            targetWindowX = hardRight;
+        }
+        camera.translateWindow({alpha * (playerWindowX - targetWindowX), 0.f});
 
         worldView.setCenter(camera.getCameraCenter());
         window.clear(sf::Color::Black);
